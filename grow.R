@@ -52,8 +52,8 @@ split.axis = function (data, labels) {
 
     for (t in splits) {
       leftIdx = data[,predictor] < t
-
       impurity = evaluateSplit(labels[leftIdx], labels[!leftIdx])
+
       if (impurity < lowestImpurity) {
         splitval = t
         splitvar = predictor
@@ -61,9 +61,38 @@ split.axis = function (data, labels) {
       }
     }
   }
+
   list(predictor=splitvar, threshold=splitval, impurity=lowestImpurity)
 }
 
 evaluateSplit = function (A, B) {
   impurity(A)/length(A) + impurity(B)/length(B)
+}
+
+growTree = function(X, Y) {
+  tree = list(classes = sort(unique(Y)))
+  class(tree) = "decision.tree"
+  tree = growNode(X, Y, tree, 1)
+  tree
+}
+
+leftChild = function(index) { 2*index  }
+rightChild = function(index) { 2*index + 1 }
+parent = function(index) { floor(index/2) }
+
+growNode = function(X, Y, tree, index) {
+  #minimumSize = 2 # stopping criterion
+  node = list(index = index, terminal = F)
+  class(node) = "tree.node"
+  if (index >= 20) {
+    node$terminal = T
+    tree$nodes[[index]] = node
+    return(tree)
+  }
+
+  tree$nodes[[index]] = node
+  tree = growNode(X,Y,tree, leftChild(index))
+  tree = growNode(X,Y,tree, rightChild(index))
+
+  tree
 }
