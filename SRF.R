@@ -4,8 +4,8 @@
 ## Author: Einar H
 ##############################################################################
 
-# for calculating discriminant projection
-require(MASS)
+require(MASS)                        # for calculating discriminant projection
+require(rpart)                       # for building decision trees
 
 # some data to work with, will add 4 dimensions of noise to the iris data set
 data(iris)
@@ -28,4 +28,8 @@ cutoff = mean(weights.abs)
 strong = weights.abs > cutoff # will correctly identify the noise features
 
 # step iii) generate bootstrap samples for your trees
-# step iv)
+
+
+# step iv) generate a tree per bootstrap sample
+
+#step v) combine trees to a forest, final classification done by voting
