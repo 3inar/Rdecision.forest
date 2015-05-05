@@ -5,7 +5,8 @@
 ##############################################################################
 
 require(MASS)                        # for calculating discriminant projection
-require(rpart)                       # for building decision trees
+#require(rpart)                       # for building decision trees
+source('./grow.R')
 
 # some data to work with, will add 4 dimensions of noise to the iris data set
 data(iris)
