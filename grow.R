@@ -3,30 +3,7 @@
 ##
 ## Author: Einar H
 ##############################################################################
-
-# retuns the impurity of a node; labels are simply the labels in the node
-impurity = function (labels, measure = "gini") {
-  # Impurity measures from Hastie & al. "Elements of Statistical Learning"
-  # not implemented: misclassification error
-  if (measure == "gini") {
-    m = function (p.hat) { p.hat*(1-p.hat) }
-  } else if (measure == "entropy") {
-    m = function (p.hat) {-p.hat*log(p.hat) }
-  } else {
-    stop("no such impurity measure")
-  }
-
-  classes = unique(labels)
-  num.class = length(classes)
-  measures = rep(1, num.class)
-
-  for (i in 1:num.class) {
-    p.hat = sum(labels==classes[i])/length(labels)
-    measures[i] = m(p.hat)
-  }
-
-  sum(measures)
-}
+source('weaklearner.R')
 
 # axis-aligned split f'n. Assumes the feature subspace has already been chosen
 split.axis = function (data, labels) {
@@ -64,21 +41,22 @@ evaluateSplit = function (A, B) {
 }
 
 # the weights are used for stratified sampling of predictors
-newTree = function(X, Y, max.depth=16) {
-  if (max.depth > 25)
+newTree = function(X, Y, maxdepth=16) {
+  if (maxdepth > 25)
       stop("This implementation can't handle super-deep trees, max is 25")
 
   tree = new.env(parent=globalenv()) # this is a hack that allows pass by reference
   tree$classes = sort(unique(Y))
   tree$nodes=list()
-  length(tree$nodes) = 2^max.depth
-  tree$max.depth = max.depth
+  length(tree$nodes) = 2^maxdepth
+  tree$maxdepth = maxdepth
 
-  class(tree) = "decision.tree"
+
   tree = growTree.recursive(X, Y, tree, 1)
 
-  # make the tree into a solid pas-by-value object again
-  ret = list(max.depth = tree$max.depth, classes=tree$classes, nodes=tree$nodes)
+  # make the tree into a solid pass-by-value object again
+  ret = list(maxdepth = tree$maxdepth, classes=tree$classes, nodes=tree$nodes)
+  class(ret) = "decisionTree"
   return(ret)
 }
 
@@ -88,29 +66,34 @@ parent = function(index) { floor(index/2) }
 depth = function(index) { floor(log2(index)) }
 
 growTree.recursive = function(X, Y, tree, index) {
-  minimumSize = 2 # stopping criterion
+  #minimumSize = 3 # stopping criterion
   node = list(index = index, terminal = F)
 
-  hist = NULL
-  for (class in tree$classes) {
-    hist = c(hist, sum(Y==class))
-  }
+  #hist = NULL
+  #for (class in tree$classes) {
+  #  hist = c(hist, sum(Y==class))
+  #}
+  #print(length(Y))
   #print(hist)
-  node$histogram = hist
+  #node$histogram = hist
   class(node) = "tree.node"
 
   # various reasons to terminate
-  if (length(Y) <= minimumSize + 1 || depth(index) == tree$max.depth || impurity(Y) == 0) {
+  #if (length(Y) <= minimumSize || depth(index) == tree$max.depth || impurity(Y) == 0) {
+  if (depth(index) == tree$maxdepth || impurity(Y) == 0) {
     node$terminal = T
     tree$nodes[[index]] = node
     return(tree)
   }
 
-  split = split.axis(X, Y)
-  node$predictor = split$predictor
-  node$threshold = split$threshold
-  left = X[, node$predictor] < node$threshold
+  learner = axisAligned(X, Y)
+  left = fitted(learner)
 
+  #split = split.axis(X, Y)
+  #node$predictor = split$predictor
+  #node$threshold = split$threshold
+  #left = X[, node$predictor] < node$threshold
+  node$learner = learner
   tree$nodes[[index]] = node
   tree = growTree.recursive(X[left,], Y[left], tree, leftChild(index))
   tree = growTree.recursive(X[!left,], Y[!left], tree, rightChild(index))
@@ -118,46 +101,3 @@ growTree.recursive = function(X, Y, tree, index) {
   return(tree)
 }
 
-growTree.experimental = function(X, Y, tree, index) {
-  minimumSize = 2 # stopping criterion
-  node = list(index = index, terminal = F)
-  n.internals = 2^tree$max.depth
-  term.flag = length(Y) + 1
-  subsets = Matrix(0, n.internals, length(Y)+1, sparse=T)
-  weak.learners = Matrix(0, n.internals, 2, sparse=T)
-
-  eval = 1
-  subsets[1, ] = c(rep(T, length(Y)), 0)
-  for (i in 1:n.internals) {
-    #print(eval)
-    if (eval == 0) break
-
-    ss = as.logical(subsets[i, ])
-    if (!any(ss)) {
-      #print(i)
-      next
-    }
-    ss = ss[-term.flag]
-    X.current = X[ss, ]
-    Y.current = Y[ss]
-
-
-    # various reasons to terminate this branch
-    if (sum(ss) <= minimumSize + 1 ||  depth(i) == tree$max.depth || impurity(Y.current) == 0 ) {
-      subsets[i, term.flag] = T # mark node as terminal
-      eval = eval-1
-      next
-    }
-
-    split = split.axis(X.current, Y.current)
-    weak.learners[i, ] = c(split$predictor, split$threshold)
-
-    left = X[, split$predictor] < split$threshold
-    right = !left
-    subsets[leftChild(i), ] = c((left & ss), 0)
-    subsets[rightChild(i), ] = c((right & ss), 0)
-    eval = eval+1
-  }
-
-  return(tree)
-}
