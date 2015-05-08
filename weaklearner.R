@@ -43,10 +43,6 @@ axisAligned.default <- function(x, y, numphi=1, numtau=1, ...) {
 
   candidates = sample(1:ncol(x), numphi)
   for (predictor in candidates) {
-    # pick  a handful of potential split points
-    # NB that you can inject randomness into the model by adjusting the n.o
-    # random splits you evaluate
-
     # if you're unlucky you might have picked a predictor that's constant,
     # this will mess you up big time
     while (min(x[, predictor]) == max(x[,predictor])) {
@@ -54,7 +50,6 @@ axisAligned.default <- function(x, y, numphi=1, numtau=1, ...) {
     }
 
     splits = runif(numtau, min(x[, predictor]), max(x[, predictor]))
-
     for (t in splits) {
       leftIdx = x[,predictor] < t
 
@@ -75,4 +70,9 @@ axisAligned.default <- function(x, y, numphi=1, numtau=1, ...) {
   al$fitted.val = bestfitted
   class(al) <- "axisAligned"
   return(al)
+}
+
+predict.axisAligned <- function(object, newdata) {
+  d = newdata[, object$predictor]
+  return(d < object$threshold)
 }
