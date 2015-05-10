@@ -45,8 +45,14 @@ axisAligned.default <- function(x, y, numphi=1, numtau=1, ...) {
   for (predictor in candidates) {
     # if you're unlucky you might have picked a predictor that's constant,
     # this will mess you up big time
+
+    retries = 0
     while (min(x[, predictor]) == max(x[,predictor])) {
+      if (retries > 10) {  # there is a corner case where all predictors have only constant values
+        return(NA)
+      }
       predictor = sample(1:ncol(x), 1)
+      retries = retries + 1
     }
 
     splits = runif(numtau, min(x[, predictor]), max(x[, predictor]))
@@ -63,7 +69,7 @@ axisAligned.default <- function(x, y, numphi=1, numtau=1, ...) {
       }
     }
   }
-  suppressWarnings(if (is.na(bestfitted)) { print("trouble") })
+  if (any(is.na(bestfitted))) { print("trouble") }
 
 
   al = list(predictor=splitvar, threshold=splitval, impurity=lowestImpurity)

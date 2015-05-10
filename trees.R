@@ -100,6 +100,16 @@ growTree.recursive = function(X, Y, tree, index, numphi, numtau) {
   }
 
   learner = axisAligned(X, Y, numphi, numtau)
+  error = is.na(learner)
+
+  if (any(error)) {
+    warning("unable to find a split point, marking node as terminal")
+    node$terminal = T
+    node$y = Y
+    tree$nodes[[index]] = node
+    return(tree)
+  }
+
   left = fitted(learner)
 
   node$learner = learner
