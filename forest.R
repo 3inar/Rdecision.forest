@@ -1,20 +1,14 @@
-rm(list=ls()) # here as a debugging precaution
-source('grow.R')
-
-#some test data
-data(iris)
-labels <- which(names(iris) %in% c("Species"))
-X <- iris[, -labels]
-y <- iris[, labels]
+#rm(list=ls()) # here as a debugging precaution
+source('trees.R')
 
 # generic function for decision forests
 decisionForest <- function(x, ...) UseMethod("decisionForest")
 
-decisionForest.default <- function(x, y, ntrees=100, maxdepth=5, ...) {
+decisionForest.default <- function(x, y, ntrees=100, maxdepth=5, numphi=2, numtau=2, ...) {
    forest.obj <- list()
    trees <- list()
    for (i in 1:ntrees) {
-     trees[[length(trees) + 1]] <- decisionTree(x, y, maxdepth=maxdepth, ...)
+     trees[[length(trees) + 1]] <- decisionTree(x, y, maxdepth=maxdepth, numphi=numphi, numtau=numtau, ...)
    }
 
    forest.obj$trees <- trees
@@ -36,7 +30,6 @@ predict.decisionForest <- function(object, newdata, ...) {
     # 1 predict in tree
     p = predict(object$trees[[t]], newdata)
     probs = probs + p
-    #print(p)
   }
   probs = probs/length(object)
 
@@ -44,7 +37,4 @@ predict.decisionForest <- function(object, newdata, ...) {
   return(probs)
 }
 
-df = decisionForest(X, y)
-pred = predict(df, X)
-print(pred)
 

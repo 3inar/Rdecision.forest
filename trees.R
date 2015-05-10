@@ -5,41 +5,6 @@
 ##############################################################################
 source('weaklearner.R')
 
-# axis-aligned split f'n. Assumes the feature subspace has already been chosen
-split.axis = function (data, labels) {
-  classes = unique(labels)
-  lowestImpurity = .Machine$double.xmax  # biggest float there is
-  splitval = NA
-  splitvar = 0
-
-  for (predictor in 1:ncol(data)) {
-    # pick  a handful of potential split points
-    # NB that you can inject randomness into the model by adjusting the n.o
-    # random splits you evaluate
-    splits = runif(20, min(data[,predictor]), max(data[,predictor]))
-
-    for (t in splits) {
-      leftIdx = data[,predictor] < t
-      if (sum(leftIdx) == 0 || sum(!leftIdx) == 0) { next }
-      split.impurity = evaluateSplit(labels[leftIdx], labels[!leftIdx])
-
-      if (split.impurity < lowestImpurity) {
-        splitval = t
-        splitvar = predictor
-        lowestImpurity = split.impurity
-      }
-    }
-  }
-
-  list(predictor=splitvar, threshold=splitval, impurity=lowestImpurity)
-}
-
-evaluateSplit = function (A, B) {
-  Na = length(A)/(length(A) + length(B))
-  Nb = length(B)/(length(A) + length(B))
-  impurity(A)*Na + impurity(B)*Nb
-}
-
 leftChild = function(index) { 2*index  }
 rightChild = function(index) { 2*index + 1 }
 parent = function(index) { floor(index/2) }
@@ -47,7 +12,7 @@ depth = function(index) { floor(log2(index)) }
 
 decisionTree <- function(x, ...) UseMethod("decisionTree")
 
-decisionTree.default = function(X, Y, maxdepth=16, ...) {
+decisionTree.default = function(X, Y, maxdepth=16, numphi=2, numtau=2, ...) {
   if (maxdepth > 25)
       stop("This implementation can't handle super-deep trees, max is 25")
 
@@ -57,7 +22,7 @@ decisionTree.default = function(X, Y, maxdepth=16, ...) {
   length(tree$nodes) = 2^maxdepth
   tree$maxdepth = maxdepth
 
-  tree = growTree.recursive(X, Y, tree, 1, ...)
+  tree = growTree.recursive(X, Y, tree, 1, numphi=numphi, numtau=numtau, ...)
 
   # make the tree into a solid pass-by-value object again
   ret = list(maxdepth = tree$maxdepth, classes=tree$classes, nodes=tree$nodes, y=Y)
@@ -81,26 +46,11 @@ predict.decisionTree <- function(object, newdata) {
     n = object$nodes[[idx]]
     hist = table(n$y)
 
-    if(length(hist) != length(levels(object$y)))
-      print(hist)
-    p <- hist/sum(hist)
 
-    if (!all(probs[indexes==idx, ] == 0)) {
-      print("sheit")
-    }
+    p <- hist/sum(hist)
     for (i in 1:length(p)) {
       probs[indexes == idx, i] <- p[i]
     }
-    #debug
-#     print(probs)
-#     print(p)
-#     break
-
-    # debug
-#     if(sum(p) > 1) {
-#       print(hist)
-#       print(sum(hist))
-#     }
   }
 
   return(probs)
@@ -135,17 +85,9 @@ findLeaf.recursive <- function(x, tree, index, metadata) {
   return (metadata)
 }
 
-growTree.recursive = function(X, Y, tree, index) {
+growTree.recursive = function(X, Y, tree, index, numphi, numtau) {
   #minimumSize = 3 # stopping criterion
   node = list(index = index, terminal = F)
-
-#   hist = NULL
-#   for (class in tree$classes) {
-#    hist = c(hist, sum(Y==class))
-#   }
-#   print(length(Y))
-#   print(hist)
-  #node$histogram = hist
   class(node) = "tree.node"
 
   # various reasons to terminate
@@ -157,13 +99,13 @@ growTree.recursive = function(X, Y, tree, index) {
     return(tree)
   }
 
-  learner = axisAligned(X, Y)
+  learner = axisAligned(X, Y, numphi, numtau)
   left = fitted(learner)
 
   node$learner = learner
   tree$nodes[[index]] = node
-  tree = growTree.recursive(X[left,], Y[left], tree, leftChild(index))
-  tree = growTree.recursive(X[!left,], Y[!left], tree, rightChild(index))
+  tree = growTree.recursive(X[left,], Y[left], tree, leftChild(index), numphi, numtau)
+  tree = growTree.recursive(X[!left,], Y[!left], tree, rightChild(index), numphi, numtau)
 
   return(tree)
 }

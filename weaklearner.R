@@ -39,7 +39,7 @@ axisAligned.default <- function(x, y, numphi=1, numtau=1, ...) {
   splitvar = 0
   bestfitted = NA
   if (nrow(x) < 2)
-    print("can't split only one point!")
+    stop("can't split only one point!")
 
   candidates = sample(1:ncol(x), numphi)
   for (predictor in candidates) {
