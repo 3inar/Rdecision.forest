@@ -23,7 +23,7 @@ levels.decisionForest <- function(obj) {
   return(levels(obj$y))
 }
 
-predict.decisionForest <- function(object, newdata, ...) {
+predict.decisionForest <- function(object, newdata, classes=F, ...) {
   probs = matrix(0, nrow(newdata), length(levels(object$y)))
 
   for (t in 1:length(object)){
@@ -33,7 +33,12 @@ predict.decisionForest <- function(object, newdata, ...) {
   }
   probs = probs/length(object)
 
-  print(p)
+  if (classes) {
+    cls <- max.col(probs)
+    cls <- as.factor(cls)
+    levels(cls) <- levels(object$y)
+    return(cls)
+  }
   return(probs)
 }
 
