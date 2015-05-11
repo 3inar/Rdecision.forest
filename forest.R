@@ -13,7 +13,11 @@ decisionForest.default <- function(x, y, ntrees=100, maxdepth=5, numphi=2, numta
 
    forest.obj$trees <- trees
    forest.obj$y <- y
-   forest.obj$levels <- levels(y)
+   forest.obj$maxdepth <- maxdepth
+   forest.obj$ntrees <- ntrees
+   forest.obj$numphi <- numphi
+   forest.obj$numtau <- numtau
+
    class(forest.obj) <- "decisionForest"
    return(forest.obj)
 }
