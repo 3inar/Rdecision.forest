@@ -14,7 +14,6 @@ decisionForest.default <- function(x, y, ntrees=100, maxdepth=5, numphi=2, numta
    forest.obj$trees <- trees
    forest.obj$y <- y
    forest.obj$levels <- levels(y)
-   length(forest.obj) <- ntrees
    class(forest.obj) <- "decisionForest"
    return(forest.obj)
 }
@@ -26,12 +25,12 @@ levels.decisionForest <- function(obj) {
 predict.decisionForest <- function(object, newdata, classes=F, ...) {
   probs = matrix(0, nrow(newdata), length(levels(object$y)))
 
-  for (t in 1:length(object)){
+  for (t in 1:object$ntrees){
     # 1 predict in tree
     p = predict(object$trees[[t]], newdata)
     probs = probs + p
   }
-  probs = probs/length(object)
+  probs = probs/object$ntrees
 
   if (classes) {
     cls <- max.col(probs)
