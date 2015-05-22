@@ -4,10 +4,11 @@ source('trees.R')
 # generic function for decision forests
 decisionForest <- function(x, ...) UseMethod("decisionForest")
 
-decisionForest.default <- function(x, y, ntrees=100, maxdepth=5, numphi=2, numtau=2, ...) {
+decisionForest.default <- function(x, y, ntrees=100, maxdepth=5, numphi=2, numtau=2, trace=F, ...) {
    forest.obj <- list()
    trees <- list()
    for (i in 1:ntrees) {
+     if (trace) print(paste0("tree num.: ", as.character(i), " of ", as.character(ntrees)))
      trees[[length(trees) + 1]] <- decisionTree(x, y, maxdepth=maxdepth, numphi=numphi, numtau=numtau, ...)
    }
 
